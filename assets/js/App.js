@@ -30,7 +30,9 @@ class App extends Component {
 
     componentDidMount() {
         const { endpoint } = this.state;
-        const socket = socketIOClient(endpoint);
+        const socket = socketIOClient(endpoint, {
+            transports: ["websocket", "polling"],
+        });
         this.socket = socket;
         socket.on('UpdateState', data => {
             this.setState({ machineState: data }, () => {
