@@ -25,6 +25,8 @@ class ActionHandler {
         this.bus = bus;
         this.handleEvent = handleEvent;
         this.stateMachine = stateMachine;
+
+        this.allowedFlows = ['checkInItems', 'checkOutItems', 'status'];
     }
 
     /**
@@ -36,6 +38,11 @@ class ActionHandler {
      *   The name of the flow to start.
      */
     enterFlow(client, flow) {
+        // Make sure only allowed flows can be entered.
+        if (this.allowedFlows.indexOf(flow) === -1) {
+            return;
+        }
+
         client.state.flow = flow;
 
         if (flow === 'checkInItems') {
@@ -55,6 +62,11 @@ class ActionHandler {
      *   The name of the flow to change to.
      */
     changeFlow(client, flow) {
+        // Make sure only allowed flows can be entered.
+        if (this.allowedFlows.indexOf(flow) === -1) {
+            return;
+        }
+
         client.state.flow = flow;
 
         if (flow === 'checkInItems') {

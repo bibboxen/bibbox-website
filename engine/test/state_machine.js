@@ -351,3 +351,31 @@ it('Tests that status can be retrieved', done => {
         }, 400);
     }).catch(done.fail);
 });
+
+it('Tests that only allowed flows can be entered and changed to', done => {
+    let client = {
+        token: '123'
+    };
+
+    setup().then(app => {
+        client = app.services.state_machine.handleEvent({
+            token: '123',
+            name: 'Reset'
+        });
+
+        client = app.services.state_machine.handleEvent({
+            token: '123',
+            name: 'Action',
+            action: 'enterFlow',
+            data: {
+                flow: 'nonExistingFlow'
+            }
+        });
+
+        client.state.step.should.equal('initial');
+
+        (client.state.flow === undefined).should.be.true()
+
+        done();
+    }).catch(done.fail);
+});
