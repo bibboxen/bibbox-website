@@ -4,12 +4,93 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
 parameters:
+    env(SAML_SP_CRT_FILE): '%kernel.project_dir%/saml/sp/sp.crt'
+    env(SAML_SP_KEY_FILE): '%kernel.project_dir%/saml/sp/sp.key'
+    env(SAML_IDP_CONFIG_FILE): '%kernel.project_dir%/saml/idp/idp.xml'
+    env(SAML_DEBUG): false
+    # Fallback values; real values should be defined in .env.local
+    env(SAML_CONTACT_PERSON_TECHNICAL_GIVEN_NAME): 'ITK Development'
+    env(SAML_CONTACT_PERSON_TECHNICAL_EMAIL_ADDRESS): 'itkdev@mkb.aarhus.dk'
+    env(SAML_CONTACT_PERSON_SUPPORT_GIVEN_NAME): 'ITK Development'
+    env(SAML_CONTACT_PERSON_SUPPORT_EMAIL_ADDRESS): 'itkdev@mkb.aarhus.dk'
+    env(SAML_ORGANIZATION_NAME): 'Bibbox'
+    env(SAML_ORGANIZATION_DISPLAY_NAME): 'Bibbox'
+    env(SAML_ORGANIZATION_URL): 'http://bibbox.local.computer'
+
+    saml_empty: ''
+    saml_sp_crt: '%env(default:saml_empty:file:resolve:SAML_SP_CRT_FILE)%'
+    saml_sp_key: '%env(default:saml_empty:file:resolve:SAML_SP_KEY_FILE)%'
+    saml_idp_config_file: '%env(default:saml_empty:resolve:SAML_IDP_CONFIG_FILE)%'
+
+    env(ROUTER_REQUEST_CONTEXT_BASE_URL): ''
+    router.request_context.scheme: '%env(ROUTER_REQUEST_CONTEXT_SCHEME)%'
+    router.request_context.host: '%env(ROUTER_REQUEST_CONTEXT_HOST)%'
+    router.request_context.base_url: '%env(ROUTER_REQUEST_CONTEXT_BASE_URL)%'
+    base_url: '%router.request_context.scheme%://%router.request_context.host%%router.request_context.base_url%'
 
 services:
     # default configuration for services in *this* file
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        bind:
+            $samlAuthenticatorSettings:
+                # https://github.com/onelogin/php-saml#settings
+                strict:              true
+                debug:               '%env(bool:SAML_DEBUG)%'
+                sp:
+                    entityId: '%base_url%'
+                    assertionConsumerService:
+                        url: '%base_url%/unilogin/acs'
+                        binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'
+                    singleLogoutService:
+                        url: '%base_url%/unilogin/sls'
+                        binding: 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'
+                    NameIDFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'
+                    x509cert: '%saml_sp_crt%'
+                    privateKey: '%saml_sp_key%'
+
+                # Read IdP configuration from a file.
+                idp: '%saml_idp_config_file%'
+
+                # Advanced settings (https://github.com/onelogin/php-saml#settings)
+                compress:
+                    requests: true
+                    responses: true
+                security:
+                    nameIdEncrypted: false
+                    authnRequestsSigned: false
+                    logoutRequestSigned: false
+                    logoutResponseSigned: false
+                    signMetadata: false
+                    wantMessagesSigned: false
+                    wantAssertionsEncrypted: false
+                    wantAssertionsSigned: false
+                    wantNameId: true
+                    wantNameIdEncrypted: false
+                    requestedAuthnContext: true
+                    wantXMLValidation: true
+                    relaxDestinationValidation: false
+                    signatureAlgorithm: http://www.w3.org/2001/04/xmldsig-more#rsa-sha256
+                    digestAlgorithm: http://www.w3.org/2001/04/xmlenc#sha256
+                    lowercaseUrlencoding: false
+                contactPerson:
+                    technical:
+                        givenName: '%env(SAML_CONTACT_PERSON_TECHNICAL_GIVEN_NAME)%'
+                        emailAddress: '%env(SAML_CONTACT_PERSON_TECHNICAL_EMAIL_ADDRESS)%'
+                    support:
+                        givenName: '%env(SAML_CONTACT_PERSON_SUPPORT_GIVEN_NAME)%'
+                        emailAddress: '%env(SAML_CONTACT_PERSON_SUPPORT_EMAIL_ADDRESS)%'
+
+                organization:
+                    en-US:
+                        name: '%env(SAML_ORGANIZATION_NAME)%'
+                        displayname: '%env(SAML_ORGANIZATION_DISPLAY_NAME)%'
+                        url: '%env(SAML_ORGANIZATION_URL)%'
+
+                # Use az-ident as username.
+                username_attribute_name: 'urn:oid:2.5.4.3'
+                display_name_attribute_name: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/displayname'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name

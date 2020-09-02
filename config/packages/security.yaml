@@ -2,6 +2,9 @@ security:
     # https://symfony.com/doc/current/security.html#where-do-users-come-from-user-providers
     providers:
         users_in_memory: { memory: null }
+        unilogin:
+            id: App\Security\UniLogin\SAMLUserProvider
+
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
@@ -9,7 +12,13 @@ security:
         main:
             anonymous: true
             lazy: true
-            provider: users_in_memory
+            # provider: users_in_memory
+
+            provider: unilogin
+            guard:
+                authenticators:
+                    - App\Security\UniLogin\SAMLAuthenticator
+                entry_point: App\Security\UniLogin\SAMLAuthenticator
 
             # activate different ways to authenticate
             # https://symfony.com/doc/current/security.html#firewalls-authentication

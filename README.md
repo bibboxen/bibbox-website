@@ -121,3 +121,55 @@ docker-compose exec engine bash -c 'npm test'
 ```
 docker-compose exec frontend bash -c 'npm run build'
 ```
+
+
+## UNI•Login
+
+Download UNI•Login SAML IdP metadata for either
+
+* production (cf. https://viden.stil.dk/display/OFFSKOLELOGIN/Tilslut+tjeneste):
+  https://viden.stil.dk/download/attachments/63537201/broker-metadata.xml?version=1&modificationDate=1582728853000&api=v2
+  or
+* test (cf. https://viden.stil.dk/pages/viewpage.action?pageId=65503525):
+  https://viden.stil.dk/download/attachments/65503525/et-broker-IdP-metadata.xml?version=7&modificationDate=1578661325000&api=v2
+
+and store in `saml/idp/unilogin.xml`, say.
+
+For test, create a key and a certificate (change `--subj` to match your actual
+setup):
+
+```sh
+mkdir -p saml/{idp,sp}
+openssl req -x509 -sha256 -nodes -days 1460 -newkey rsa:2048 \
+    -keyout saml/sp/sp.key \
+    -out saml/sp/sp.crt \
+    -subj "/C=DK/L=Aarhus/O=Bibboxen/CN=bibboxen.example.com/emailAddress=info@bibbox.example.com"
+```
+
+Add environment variables in `.env.local` to point to your local IdP metadata,
+key and certificate:
+
+```sh
+SAML_SP_CRT_FILE='%kernel.project_dir%/saml/sp/sp.crt'
+SAML_SP_KEY_FILE='%kernel.project_dir%/saml/sp/sp.key'
+SAML_IDP_CONFIG_FILE='%kernel.project_dir%/saml/idp/unilogin.xml'
+```
+
+See [config/services.yaml] for default values.
+
+Set organization and contact information in `.env.local` as well:
+
+```sh
+SAML_CONTACT_PERSON_TECHNICAL_GIVEN_NAME='ITK Development'
+SAML_CONTACT_PERSON_TECHNICAL_EMAIL_ADDRESS='itkdev@mkb.aarhus.dk'
+SAML_CONTACT_PERSON_SUPPORT_GIVEN_NAME='ITK Development'
+SAML_CONTACT_PERSON_SUPPORT_EMAIL_ADDRESS='itkdev@mkb.aarhus.dk'
+SAML_ORGANIZATION_NAME='Bibbox'
+SAML_ORGANIZATION_DISPLAY_NAME='Bibbox'
+SAML_ORGANIZATION_URL='http://bibbox.local.computer'
+```
+
+If everything works, you should now be able to load your UNI•Login SAML metadata
+on `/unilogin/metadata`.
+
+To test the actual login go to `/unilogin`.
